@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <thread>
+#include <fstream>
 
 void *get_in_addr(struct sockaddr *sa) {
 
@@ -19,16 +20,36 @@ void *get_in_addr(struct sockaddr *sa) {
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
+std::string getPath() {
+
+    std::string path;
+    std::ifstream configFile;
+    configFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+    try {
+        configFile.open("server.conf");
+        std::getline(configFile, path);
+    }
+    catch (std::ifstream::failure e) {
+        throw e;
+    }
+
+    return path;
+}
+
 Server::Server(const std::string& port) {
 
     try {
         socket = new ServerSocket(port);
+        WWWpath = getPath();
     }
     catch (const char * exc) {
-        std::cout << "EXCEPTION: contructing socket" << std::endl;
+        throw exc;
+    }
+    catch (std::ifstream::failure e) {
+        throw e;
     }
 }
-
 void Server::Listen() {
 
 	if (listen(socket->getSocket(), 10) == -1) {
@@ -39,12 +60,13 @@ void Server::Listen() {
 int Server::Accept(std::string& address) {
 
     int clientSocket;
-	struct sockaddr_storage their_addr; // connector's address information
+	struct sockaddr_storage their_addr;
 	socklen_t sin_size;
 	char s[INET6_ADDRSTRLEN];
 
 	sin_size = sizeof (their_addr);
-	clientSocket = accept(socket->getSocket(), (struct sockaddr *)&their_addr, &sin_size);
+	clientSocket = accept(socket->getSocket(), 
+            (struct sockaddr *)&their_addr, &sin_size);
 
     if (clientSocket != -1) {
 	    inet_ntop(their_addr.ss_family,
@@ -56,32 +78,18 @@ int Server::Accept(std::string& address) {
     return clientSocket;
 }
 
-void Server::HandleClients() {
-    while (true) {
-        
-    }
+void Server::HandleClient(int clientSocket) {
+
+    ClientHandler handler(clientSocket);
+    handler.SetServer(this); 
+
+    handler.HandleClient(handlerFunc);
 }
 
 void Server::ServerLoop() {
 
     int clientSocket;
     std::string address;
-    auto func = [] (ClientHandler* thisHandler) -> bool {
-
-        std::string recvMsg;
-        int bytesSent; 
-        int bytesRecv;
-
-        bytesSent = thisHandler->Send("HELLO\n");
-        std::cout << "Sent " << bytesSent << " bytes\n";
-        recvMsg = thisHandler->Receive(80, bytesRecv);    
-        std::cout << "Received " << bytesRecv << " bytes\n";
-        std::cout << "Received message: " << recvMsg << "\n";
-        close(thisHandler->GetSocket());
-        std::cout << "Connection closed" << std::endl;
-
-        return true;
-    };
 
     try {
         Listen();
@@ -89,9 +97,8 @@ void Server::ServerLoop() {
 
         while(true) {
             if ((clientSocket = Accept(address)) == -1) continue;     
-            std::cout << "Connection from: " << address << std::endl;
-            handler.SetSocket(clientSocket);
-            handler.HandleClient(func);
+            std::cout << "Got connection from ip: " << address << "\n";
+            HandleClient(clientSocket);
         }    
     }
     catch (const char* exc) {
