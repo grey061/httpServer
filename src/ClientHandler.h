@@ -3,18 +3,12 @@
 
 #include <string>
 #include <unistd.h>
-#include "Server.h"
-
-class Server;
 
 class ClientHandler {
-private:
+protected:
     int ClientSocket;
-    Server* server;
 
 public:
-    ClientHandler() { };
-
     ClientHandler(int sock) : ClientSocket(sock) {};
 
     std::string Receive(const int MAXDATASIZE, int& bytes);
@@ -26,8 +20,6 @@ public:
     }
 
     void SetSocket(int sock) { ClientSocket = sock; }
-
-    void SetServer(Server* serv) { server = serv; }
     
     int GetSocket() { return ClientSocket; }
 
