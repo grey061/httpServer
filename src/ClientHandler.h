@@ -9,7 +9,8 @@ protected:
     int ClientSocket;
 
 public:
-    ClientHandler(int sock) : ClientSocket(sock) {};
+    ClientHandler() : ClientSocket(0) {}
+    ClientHandler(int sock) : ClientSocket(sock) {}
 
     std::string Receive(const int MAXDATASIZE, int& bytes);
 
@@ -23,7 +24,7 @@ public:
     
     int GetSocket() { return ClientSocket; }
 
-    ~ClientHandler() { close(ClientSocket); };
+    ~ClientHandler() { close(ClientSocket); }
 };
 
 #endif

@@ -33,6 +33,13 @@ WebServer::WebServer(const std::string& port) {
         WWWPath = getPath();
         fileTraverse(WWWPath);
         Files = files;
+        for (int i = 0; i < 16; ++i) {
+            ClientHandlers.push(WebClientHandler(this));
+            //TODO run in separate thread
+            ClientHandlers.front().
+                SetThread(std::thread(&WebClientServer::WaitForClients(), 
+                            ClientHandlers.front());
+        }
     }
     catch (const char* exc) {
         throw exc;
@@ -59,6 +66,18 @@ std::string WebServer::getPath() {
     return path;
 }
 
+void AddClient(int sock) {
+    QueueMutex.lock();
+    ClientQueue.push(sock);
+    QueueMutex.unlock();
+}
+
+void AddHandler(int sock) {
+    StackMutex.lock();
+    ClientHandlers.push(WebClientHandler(sock, this));
+    StackMutex.unlock();
+}
+
 bool WebServer::isInFiles(const std::string& file) {
     for(auto& f : Files) {
         if (WWWPath + "/" + file == f) return true;
@@ -73,6 +92,7 @@ void WebServer::Run() {
     while (true) {
         int sock = server->Accept(address);
         std::cout << "Connection from: " << address << std::endl; 
+        AddClient(sock);
         WebClientHandler webHandler(sock, this);
         webHandler.Handle();
         close(sock);

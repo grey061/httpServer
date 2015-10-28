@@ -33,6 +33,7 @@ std::string loadSite(const std::string& path) {
         throw e;
     }
 }
+
 // TODO make it wait for further requests for some time
 void WebClientHandler::Handle() {
     int bytesRcv;
