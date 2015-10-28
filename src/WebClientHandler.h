@@ -10,8 +10,9 @@ class WebClientHandler : public ClientHandler {
 private:
     WebServer* server;
 public:
-    WebClientHandler(int sock) : ClientHandler(sock) {}
-    void SetServer(WebServer* serv) { server = serv; }
+    WebClientHandler(int sock, WebServer* serv)
+        : ClientHandler(sock), server(serv) {}
+
     void Handle();
 };
 

@@ -6,7 +6,8 @@
 std::string httpResponseOKK= "HTTP/1.1 200 OK\n\nHello!";
 std::string httpResponseOK= "HTTP/1.1 200 OK\n\n";
 std::string httpResponseNotFound = "HTTP/1.1 404 Not Found\n\nDon't have that :(";
-std::string httpResponseBadRequest = "HTTP/1.1 400 Bad Request\n\nHad some problems receiving your request :(";
+std::string httpResponseBadRequest = "HTTP/1.1 400 Bad Request\n\n"
+                    "Had some problems receiving your request :(";
 
 std::string LoadFile(std::ifstream &stream)
 {
@@ -32,23 +33,26 @@ std::string loadSite(const std::string& path) {
         throw e;
     }
 }
-
+// TODO make it wait for further requests for some time
 void WebClientHandler::Handle() {
     int bytesRcv;
     int bytesSent;
     std::string rcvMsg;
 
-    rcvMsg = Receive(500, bytesRcv);
+    rcvMsg = Receive(600, bytesRcv);
+    std::cout << "Received " << bytesRcv << " bytes\n";
+    std::cout << "MSG:\n" << rcvMsg << "\n"; 
     if (bytesRcv == -1) {
-        Send(httpResponseBadRequest);
+        bytesSent = Send(httpResponseBadRequest);
     }
     else if (parseGET(rcvMsg) == "") {
-        Send(httpResponseNotFound);
+        bytesSent = Send(httpResponseNotFound);
     }
     else {
         if (server->isInFiles(parseGET(rcvMsg))) {
-            Send(httpResponseOK + loadSite(server->GetWWWPath() + "/" + parseGET(rcvMsg)));
+            bytesSent = Send(httpResponseOK + loadSite(server->GetWWWPath() + "/" + parseGET(rcvMsg)));
         }
-        else Send(httpResponseNotFound);
+        else bytesSent = Send(httpResponseNotFound);
     }
+    std::cout << "Bytes sent: " << bytesSent << std::endl; 
 }

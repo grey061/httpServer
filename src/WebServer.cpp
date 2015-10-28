@@ -73,8 +73,7 @@ void WebServer::Run() {
     while (true) {
         int sock = server->Accept(address);
         std::cout << "Connection from: " << address << std::endl; 
-        WebClientHandler webHandler(sock);
-        webHandler.SetServer(this); 
+        WebClientHandler webHandler(sock, this);
         webHandler.Handle();
         close(sock);
     }
