@@ -39,7 +39,8 @@ WebServer::WebServer(const std::string& port) {
         for (int i = 0; i < 16; ++i) {
             ClientHandlers.push(new WebClientHandler(this));
             //TODO can't assign threads
-            Threads.push_back(std::thread(&WebClientHandler::WaitForClients, *(ClientHandlers.top())));
+            Threads.push_back(std::thread(&WebClientHandler::WaitForClients,
+                        *(ClientHandlers.top())));
             ClientHandlers.top()->SetThread(&(Threads.front()));
         }
     }
