@@ -6,6 +6,9 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <queue>
+#include <stack>
+#include <thread>
 
 
 std::set<std::string, std::greater<std::string>> files;
@@ -34,11 +37,10 @@ WebServer::WebServer(const std::string& port) {
         fileTraverse(WWWPath);
         Files = files;
         for (int i = 0; i < 16; ++i) {
-            ClientHandlers.push(WebClientHandler(this));
-            //TODO run in separate thread
-            ClientHandlers.front().
-                SetThread(std::thread(&WebClientServer::WaitForClients(), 
-                            ClientHandlers.front());
+            ClientHandlers.push(new WebClientHandler(this));
+            //TODO can't assign threads
+            Threads.push_back(std::thread(&WebClientHandler::WaitForClients(), ClientHandlers.top()));
+            ClientHandlers.top()->SetThread(&(Threads.front()));
         }
     }
     catch (const char* exc) {
@@ -66,15 +68,15 @@ std::string WebServer::getPath() {
     return path;
 }
 
-void AddClient(int sock) {
+void WebServer::AddClient(int sock) {
     QueueMutex.lock();
     ClientQueue.push(sock);
     QueueMutex.unlock();
 }
 
-void AddHandler(int sock) {
+void WebServer::AddHandler(int sock) {
     StackMutex.lock();
-    ClientHandlers.push(WebClientHandler(sock, this));
+    ClientHandlers.push(new WebClientHandler(sock, this));
     StackMutex.unlock();
 }
 
@@ -93,10 +95,20 @@ void WebServer::Run() {
         int sock = server->Accept(address);
         std::cout << "Connection from: " << address << std::endl; 
         AddClient(sock);
-        WebClientHandler webHandler(sock, this);
-        webHandler.Handle();
+        //WebClientHandler webHandler(sock, this);
+        //webHandler.Handle();
         close(sock);
     }
+}
+
+int WebServer::GetClient() {
+    int sock = 0;
+    QueueMutex.lock();
+    if (ClientQueue.size() != 0) { 
+        sock = ClientQueue.front();
+        ClientQueue.pop();
+    }
+    QueueMutex.unlock();
 }
 
 WebServer::~WebServer() {

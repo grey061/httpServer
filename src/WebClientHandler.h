@@ -10,18 +10,17 @@ class WebServer;
 class WebClientHandler : public ClientHandler {
 private:
     WebServer* server;
-    std::thread Thread;
+    std::thread* Thread;
+    bool run;
 
 public:
+    WebClientHandler(WebServer* serv)
+        : ClientHandler(), server(serv) {}
     WebClientHandler(int sock, WebServer* serv)
-        : ClientHandler(sock), server(serv) {}
+        : ClientHandler(sock), server(serv), run(true) {}
 
-    void SetThread(std::thread t) { Thread = t; }
-    void WaitForClients() {
-        while() {
-            
-        }
-    }
+    void SetThread(std::thread* t) { Thread = t; }
+    void WaitForClients();
 
     void Handle();
 };

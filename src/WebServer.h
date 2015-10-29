@@ -1,6 +1,7 @@
 #ifndef WEB_SERVER_H
 #define WEB_SERVER_H
 
+#include "WebClientHandler.h"
 #include "Server.h"
 #include <string>
 #include <set>
@@ -9,6 +10,10 @@
 #include <thread>
 #include <mutex>
 #include <stack>
+#include <queue>
+#include <vector>
+
+class WebClientHandler;
 
 class WebServer {
 private:
@@ -16,11 +21,14 @@ private:
     std::string WWWPath;
     std::set<std::string, std::greater<std::string>> Files;
 
-    std::stack<WebClientHandlder> ClientHandlers;
+    //TODO use pointers as structure values
+    std::stack<WebClientHandler*> ClientHandlers;
     std::mutex StackMutex;
 
     std::queue<int> ClientQueue;
     std::mutex QueueMutex;
+
+    std::vector<std::thread> Threads;
 
     std::string getPath();
     void AddClient(int sock);
@@ -34,6 +42,8 @@ public:
    void Run();
 
    std::string GetWWWPath() { return WWWPath; }
+
+   int GetClient();
 
    ~WebServer();
 };

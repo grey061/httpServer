@@ -34,6 +34,16 @@ std::string loadSite(const std::string& path) {
     }
 }
 
+void WebClientHandler::WaitForClients() {
+    int client;
+    while (run) {
+        client = server->GetClient();
+        if (client) {
+            SetSocket(client);
+        }
+    }
+}
+
 // TODO make it wait for further requests for some time
 void WebClientHandler::Handle() {
     int bytesRcv;
@@ -51,7 +61,8 @@ void WebClientHandler::Handle() {
     }
     else {
         if (server->isInFiles(parseGET(rcvMsg))) {
-            bytesSent = Send(httpResponseOK + loadSite(server->GetWWWPath() + "/" + parseGET(rcvMsg)));
+            bytesSent = Send(httpResponseOK + loadSite(server->GetWWWPath() +
+                        "/" + parseGET(rcvMsg)));
         }
         else bytesSent = Send(httpResponseNotFound);
     }
