@@ -39,7 +39,7 @@ WebServer::WebServer(const std::string& port) {
         for (int i = 0; i < 16; ++i) {
             ClientHandlers.push(new WebClientHandler(this));
             //TODO can't assign threads
-            Threads.push_back(std::thread(&WebClientHandler::WaitForClients(), ClientHandlers.top()));
+            Threads.push_back(std::thread(&WebClientHandler::WaitForClients, *(ClientHandlers.top())));
             ClientHandlers.top()->SetThread(&(Threads.front()));
         }
     }
@@ -95,20 +95,21 @@ void WebServer::Run() {
         int sock = server->Accept(address);
         std::cout << "Connection from: " << address << std::endl; 
         AddClient(sock);
+        std::cout << "Socket: " << ClientQueue.front() << std::endl;
         //WebClientHandler webHandler(sock, this);
         //webHandler.Handle();
-        close(sock);
     }
 }
 
 int WebServer::GetClient() {
-    int sock = 0;
+    int sock = -1;
     QueueMutex.lock();
     if (ClientQueue.size() != 0) { 
         sock = ClientQueue.front();
         ClientQueue.pop();
     }
     QueueMutex.unlock();
+    return sock;
 }
 
 WebServer::~WebServer() {

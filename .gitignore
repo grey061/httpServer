@@ -3,3 +3,4 @@ main
 src/server.conf
 server.conf
 main.bak
+Makefile.bak
