@@ -18,34 +18,16 @@ class WebClientHandler;
 class WebServer {
 private:
     Server* server;
+    ClientHandlerPool* HandlerPool;
     std::string WWWPath;
     std::set<std::string, std::greater<std::string>> Files;
-
-    //TODO use pointers as structure values
-    std::stack<WebClientHandler*> ClientHandlers;
-    std::mutex StackMutex;
-
-    std::queue<int> ClientQueue;
-    std::mutex QueueMutex;
-
-    std::vector<std::thread> Threads;
-
-    std::string getPath();
-    void AddClient(int sock);
-    void AddHandler(int sock);
+    std::string GetPath();
 
 public:
-   WebServer(const std::string& port); 
-
-   bool isInFiles(const std::string& file);
-
-   void Run();
-
-   std::string GetWWWPath() { return WWWPath; }
-
-   int GetClient();
-
-   ~WebServer();
+    WebServer(const std::string& port); 
+    bool IsInFiles(const std::string& file);
+    std::string GetWWWPath() { return WWWPath; }
+    ~WebServer();
 };
 
 #endif

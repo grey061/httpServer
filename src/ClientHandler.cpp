@@ -6,8 +6,7 @@ int ClientHandler::Send(const std::string& source) {
     return send(ClientSocket, source.c_str(), source.length(), 0);
 }
 
-std::string ClientHandler::Receive(const int MAXDATASIZE, int& bytes)
-{
+std::string ClientHandler::Receive(const int MAXDATASIZE, int& bytes) {
     char *buf = new char[MAXDATASIZE];
     int numbytes;
     std::string retString = "";
@@ -19,4 +18,22 @@ std::string ClientHandler::Receive(const int MAXDATASIZE, int& bytes)
 
     bytes = numbytes;
     return retString;
+}
+
+void ClientHandler::WaitForClients() {
+    int client;
+    IsOn = true;
+    std::cout << "Client handler ready for duty!\n";
+    while (IsOn) {
+        client = server->GetClient();
+        if (client != -1) {
+            SetSocket(client);
+            Handle();
+            close(ClientSocket);
+        }
+    }
+}
+
+void ClientHandler::Handle() {
+    Send("Hello and good bye ;)");
 }

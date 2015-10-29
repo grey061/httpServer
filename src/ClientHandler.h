@@ -3,27 +3,26 @@
 
 #include <string>
 #include <unistd.h>
+#include "Server.h"
 
 class ClientHandler {
 protected:
     int ClientSocket;
+    bool IsOn;
+    Server* server;
 
 public:
-    ClientHandler() : ClientSocket(0) {}
-    ClientHandler(int sock) : ClientSocket(sock) {}
-
+    ClientHandler(Server* serv) 
+        : ClientSocket(0), IsOn(false), server(serv) {}
+    ClientHandler(int sock, Server* serv) 
+        : ClientSocket(sock), IsOn(false), server(serv) {}
+    void TurnOff() { IsOn = false; } 
     std::string Receive(const int MAXDATASIZE, int& bytes);
-
     int Send(const std::string& source);
-
-    bool HandleClient(bool (*handleFunc)(ClientHandler* handler)) {
-        return handleFunc(this); 
-    }
-
     void SetSocket(int sock) { ClientSocket = sock; }
-    
     int GetSocket() { return ClientSocket; }
-
+    void WaitForClients();
+    virtual void Handle();
     ~ClientHandler() { close(ClientSocket); }
 };
 

@@ -9,18 +9,6 @@ std::string httpResponseBadRequest = "HTTP/1.1 400 Bad Request\n\n"
                     "Had some problems receiving your request :(";
 
 
-void WebClientHandler::WaitForClients() {
-    int client;
-    std::cout << "Client handler ready for duty!\n";
-    while (run) {
-        client = server->GetClient();
-        if (client != -1) {
-            SetSocket(client);
-            Handle();
-        }
-    }
-}
-
 // TODO make it wait for further requests for some time
 void WebClientHandler::Handle() {
     int bytesRcv;

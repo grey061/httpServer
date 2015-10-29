@@ -1,32 +1,19 @@
 #include "WebServer.h"
 #include "Server.h"
 #include "WebClientHandler.h"
+#include "fileFunctions.h"
 #include <unistd.h>
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <vector>
-#include <queue>
-#include <stack>
 #include <thread>
 
-
-std::set<std::string, std::greater<std::string>> files;
-
-int dirTree(const char *pathname, const struct stat* sbuf, int type,
-        struct FTW* ftwb) {
-
-    if (type == FTW_F) files.insert(std::string(pathname));
-
-    return 0;
-}
-
-void fileTraverse(const std::string& path) {
-
-    int flags = 0;
-    if (nftw(path.c_str(), dirTree, 10, flags) == -1) {
-        throw "EXCEPTION: file traversal error";
-    }
+WebServer::WebServer(const std::string& port) {
+    server = new Server(port);
+    WWWPath = GetPath();
+    fileTraverse(WWWPath);
+    Files = files;
 }
 
 WebServer::WebServer(const std::string& port) {
@@ -52,7 +39,7 @@ WebServer::WebServer(const std::string& port) {
     }
 }
 
-std::string WebServer::getPath() {
+std::string WebServer::GetPath() {
 
     std::string path;
     std::ifstream configFile;
@@ -69,48 +56,11 @@ std::string WebServer::getPath() {
     return path;
 }
 
-void WebServer::AddClient(int sock) {
-    QueueMutex.lock();
-    ClientQueue.push(sock);
-    QueueMutex.unlock();
-}
-
-void WebServer::AddHandler(int sock) {
-    StackMutex.lock();
-    ClientHandlers.push(new WebClientHandler(sock, this));
-    StackMutex.unlock();
-}
-
-bool WebServer::isInFiles(const std::string& file) {
+bool WebServer::IsInFiles(const std::string& file) {
     for(auto& f : Files) {
         if (WWWPath + "/" + file == f) return true;
     }
     return false;
-}
-
-void WebServer::Run() {
-    
-    server->Listen();
-    std::string address;
-    while (true) {
-        int sock = server->Accept(address);
-        std::cout << "Connection from: " << address << std::endl; 
-        AddClient(sock);
-        std::cout << "Socket: " << ClientQueue.front() << std::endl;
-        //WebClientHandler webHandler(sock, this);
-        //webHandler.Handle();
-    }
-}
-
-int WebServer::GetClient() {
-    int sock = -1;
-    QueueMutex.lock();
-    if (ClientQueue.size() != 0) { 
-        sock = ClientQueue.front();
-        ClientQueue.pop();
-    }
-    QueueMutex.unlock();
-    return sock;
 }
 
 WebServer::~WebServer() {
