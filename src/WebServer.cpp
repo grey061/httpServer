@@ -16,29 +16,6 @@ WebServer::WebServer(const std::string& port) {
     Files = files;
 }
 
-WebServer::WebServer(const std::string& port) {
-
-    try {
-        server = new Server(port);
-        WWWPath = getPath();
-        fileTraverse(WWWPath);
-        Files = files;
-        for (int i = 0; i < 16; ++i) {
-            ClientHandlers.push(new WebClientHandler(this));
-            //TODO can't assign threads
-            Threads.push_back(std::thread(&WebClientHandler::WaitForClients,
-                        *(ClientHandlers.top())));
-            ClientHandlers.top()->SetThread(&(Threads.front()));
-        }
-    }
-    catch (const char* exc) {
-        throw exc;
-    }
-    catch (std::ifstream::failure e) {
-        throw e;
-    }
-}
-
 std::string WebServer::GetPath() {
 
     std::string path;

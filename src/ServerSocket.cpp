@@ -21,18 +21,18 @@ ServerSocket::ServerSocket(const std::string& port) {
 	}
 
 	for(p = servinfo; p != NULL; p = p->ai_next) {
-		if ((sockfd = socket(p->ai_family, p->ai_socktype,
+		if ((socket_ = socket(p->ai_family, p->ai_socktype,
 				p->ai_protocol)) == -1) {
 			continue;
 		}
 
-		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
+		if (setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &yes,
 				sizeof(int)) == -1) {
             throw "EXCEPTION: setsockopt failure";
 		}
 
-		if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(sockfd);
+		if (bind(socket_, p->ai_addr, p->ai_addrlen) == -1) {
+			close(socket_);
 			continue;
 		}
 
@@ -46,6 +46,11 @@ ServerSocket::ServerSocket(const std::string& port) {
 	}
 } 
 
-int ServerSocket::getSocket() const {
-    return sockfd;
+ServerSocket& ServerSocket::operator=(ServerSocket&& rhs) {
+    this->socket_ = rhs.socket_;
+    return *this;
+}
+
+int ServerSocket::getSocket() {
+    return socket_;
 }

@@ -5,11 +5,14 @@
 
 class ServerSocket {
 private:
-    int sockfd;
+    int socket_;
 
 public:
+    ServerSocket() : socket_(-1) {}
     ServerSocket(const std::string& port);
-    int getSocket() const;
+    ServerSocket& operator=(ServerSocket&&);
+    ServerSocket(ServerSocket&) = delete;
+    int getSocket();
 };
 
 #endif

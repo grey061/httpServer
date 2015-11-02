@@ -8,7 +8,10 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <thread>
-#include <fstream>
+#include <condition_variable>
+#include <chrono>
+#include <memory>
+#include <functional>
 
 void *get_in_addr(struct sockaddr *sa) {
 
@@ -22,22 +25,22 @@ void *get_in_addr(struct sockaddr *sa) {
 Server::Server(const std::string& port) {
 
     try {
-        socket = new ServerSocket(port);
-        IsOn = false;
+        socket_ = ServerSocket(port);
+        isOn_ = false;
     }
     catch (const char * exc) {
         throw exc;
     }
 }
 
-void Server::Listen() {
+void Server::waitForClients() {
 
-	if (listen(socket->getSocket(), 10) == -1) {
+	if (listen(socket_.getSocket(), 5) == -1) {
         throw "EXCEPTION: error listening";
 	}
 }
 
-int Server::Accept(std::string& address) {
+int Server::acceptClient(std::string& address) {
 
     int clientSocket;
 	struct sockaddr_storage their_addr;
@@ -45,7 +48,7 @@ int Server::Accept(std::string& address) {
 	char s[INET6_ADDRSTRLEN];
 
 	sin_size = sizeof (their_addr);
-	clientSocket = accept(socket->getSocket(), 
+	clientSocket = accept(socket_.getSocket(), 
             (struct sockaddr *)&their_addr, &sin_size);
 
     if (clientSocket != -1) {
@@ -58,47 +61,56 @@ int Server::Accept(std::string& address) {
     return clientSocket;
 }
 
-void Server::EnqueueRequest(int sock) {
-    QueueMutex.lock();
-    RequestQueue.push(sock);
-    QueueMutex.unlock();
+void Server::pushClient(int sock) {
+    std::lock_guard<std::mutex> lk(queueMutex_);
+    clientQueue_.push(sock);
+    newClient_.notify_one();
 }
 
-int Server::DequeueRequest() {
-    int request = -1;
-    QueueMutex.lock();
-    if (RequestQueue.size() != 0) { 
-        request = RequestQueue.front();
-        RequestQueue.pop();
+int Server::popClient() {
+    int client = -1;
+    std::lock_guard<std::mutex> lk(queueMutex_);
+    if (clientQueue_.size() != 0) { 
+        client = clientQueue_.front();
+        clientQueue_.pop();
     }
-    QueueMutex.unlock();
-    return request;
+    return client;
 }
 
-void Server::Run() {
+int Server::waitAndPopClient() {
+    int sock = -1;
+    std::unique_lock<std::mutex> lk(queueMutex_);
+    if (newClient_.wait_for(lk, std::chrono::milliseconds(1000), 
+                [this] {return !clientQueue_.empty();})) {
+        sock = clientQueue_.front();
+        clientQueue_.pop();
+    }
+    return sock;
+}
+
+void Server::run() {
     std::string address = "";
     int sock = 0;
+    isOn_ = true;
 
-    IsOn = true;
+    waitForClients();
 
-    Listen();
+    std::cout << "Server is running" << std::endl;
 
-    while (IsOn) {
-        if (QueueSize() < 50) {
-            sock = server->Accept(address);
+    while (isOn_) {
+        if (clientQueue_.size() < 50) {
+            sock = acceptClient(address);
             std::cout << "Connection from: " << address << std::endl; 
             if (sock != -1) {
-                EnqueueRequest(sock);
+                pushClient(sock);
             }
         }
     }
+    closeSocket();
+    std::cout << "Server closed" << std::endl;
 }
 
-std::thread Server::RunThreaded() {
-    return std::thread(&Server::Run, this);
-}
-
-Server::~Server() {
-    close(socket->getSocket());
-    delete socket;
+std::unique_ptr<std::thread> Server::runThreaded() {
+    return std::unique_ptr<std::thread>(
+            new std::thread(&Server::run, std::ref(*this)));
 }

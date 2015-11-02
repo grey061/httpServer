@@ -5,26 +5,34 @@
 #include <string>
 #include <queue>
 #include <thread>
+#include <mutex>
+#include <memory>
+#include <condition_variable>
+#include <unistd.h>
+
+//class Socket;
 
 class Server {
-private:
-    ServerSocket* socket;
-    std::queue<int> RequestQueue;
-    std::mutex QueueMutex;
-    bool IsOn; 
+protected:
+    ServerSocket socket_;
+    std::queue<int> clientQueue_;
+    std::mutex queueMutex_;
+    std::condition_variable newClient_;
+    bool isOn_; 
 
-    void EnqueueRequest(int sock);
-    void Listen();
-    int Accept(std::string& address);
+    void pushClient(int sock);
 
 public:
     Server(const std::string& port);
-    void TurnOff() { IsOn = false; }
-    int QueueSize() { return RequestQueue.size() }
-    int DequeueRequest();
-    virtual void Run();
-    std::thread Server::RunThreaded();
-    virtual ~Server();
+    void waitForClients();
+    int acceptClient(std::string& address);
+    bool isOn() { return isOn_; }
+    void turnOff() { isOn_ = false; }
+    int popClient();
+    int waitAndPopClient();
+    virtual void run();
+    std::unique_ptr<std::thread> runThreaded();
+    void closeSocket() { close(socket_.getSocket()); }
 };
 
 #endif

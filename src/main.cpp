@@ -1,23 +1,28 @@
-#include "ServerSocket.h"
-#include "WebServer.h"
-#include "ClientHandler.h"
 #include <iostream>
-#include <fstream>
+#include <memory>
+#include <thread>
+#include <stdexcept>
+#include "ServerSocket.h"
+#include "Server.h"
+#include "ClientHandler.h"
+#include "ClientHandlerPool.h"
+#include "ServerController.h"
 
 
 int main() {
+    Server server("3490");
+    std::cout << "Created server" << std::endl;
 
-    try {
-        WebServer server("3490");
-        server.Run();
-    }
-    catch (const char * exc) {
-        std::cout << "EXCEPTION: contructing socket" << std::endl;
-        return 1;
-    }
-    catch (std::ifstream::failure e) {
-        std::cout << "Problem reading config file, check if it exists.\n";
-        return 1;
-    }
+    Server contServ("6666");
+    std::cout << "Created controller server" << std::endl;
 
+    ClientHandlerPool pool(3, &server);
+    std::cout << "Created handler pool" << std::endl;
+
+    ServerController controller(&contServ, &server, &pool);
+    controller.getServerThread() = server.runThreaded();
+    std::cout << "Created server controller" << std::endl;
+    controller.run();
+    //std::unique_ptr<std::thread> contThread = controller.runThreaded();
+    //contThread->join();
 }

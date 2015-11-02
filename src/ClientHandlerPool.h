@@ -2,15 +2,24 @@
 #define CLIENT_HANDLER_POOL_H
 
 #include "ClientHandler.h"
+#include "Server.h"
+#include <utility>
 
 class ClientHandlerPool {
 private:
-    // TODO maybe pairs of ClientHandlers and threads
-    std::vector<ClientHandler*> Handlers;
+    std::vector<std::pair<std::unique_ptr<ClientHandler>,
+        std::unique_ptr<std::thread>>> handlers_;
+
     // TODO handler factory
 public:
-    // TODO adding deleting handlers
-    
+    ClientHandlerPool(int handlerCount, Server* server);
+    bool turnOn(int i);
+    void turnOff(int i);
+    void shutDown();
+    void addHandler(Server* server);
+    int handlerCount() { return handlers_.size(); }
+    void removeHandler();
+    ~ClientHandlerPool() { shutDown(); }
 };
 
 #endif
